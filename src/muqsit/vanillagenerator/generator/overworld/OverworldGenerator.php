@@ -52,6 +52,7 @@ class OverworldGenerator extends VanillaGenerator
 
 		(function () use ($biomes): void {
 			/** @noinspection PhpUndefinedFieldInspection */
+			/** @phpstan-ignore-next-line  */
 			$this->biomeIds = new BiomeArray($biomes);
 		})->call($chunk);
 	}
