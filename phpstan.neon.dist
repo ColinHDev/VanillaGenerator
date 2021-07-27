@@ -9,7 +9,5 @@ parameters:
 		processTimeout: 180.0
 	paths:
 		- src
-	stubFiles:
-		- stubs/mcgenerator.stub
 	scanDirectories:
 		- phar://PharBuilder/PocketMine-MP.phar
