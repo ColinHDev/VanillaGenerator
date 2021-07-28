@@ -49,7 +49,6 @@ class OverworldGenerator extends VanillaGenerator
 			}
 		}
 
-		/** @phpstan-ignore-next-line */
 		$this->generator = new \OverworldGenerator($seed, $enableUHC);
 	}
 
