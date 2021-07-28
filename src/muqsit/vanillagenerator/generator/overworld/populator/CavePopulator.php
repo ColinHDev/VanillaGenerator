@@ -4,15 +4,17 @@ declare(strict_types=1);
 namespace muqsit\vanillagenerator\generator\overworld\populator;
 
 use muqsit\vanillagenerator\generator\Populator;
-use pocketmine\block\Block;
 use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\Dirt;
 use pocketmine\block\Liquid;
 use pocketmine\block\VanillaBlocks;
+use pocketmine\math\Facing;
 use pocketmine\math\Math;
-use Random;
+use pocketmine\math\Vector3;
 use pocketmine\world\ChunkManager;
 use pocketmine\world\format\Chunk;
+use Random;
 
 class CavePopulator implements Populator
 {
@@ -260,14 +262,17 @@ class CavePopulator implements Populator
 
 	private function digBlock(Chunk $chunk, int $currX, int $currY, int $currZ, int $caveLiquidAltitude): void
 	{
-		$block = BlockFactory::getInstance()->fromFullBlock($chunk->getFullBlock($currX, $currY, $currZ));
-		$blockAbove = BlockFactory::getInstance()->fromFullBlock($chunk->getFullBlock($currX, $currY + 1, $currZ));
-
-		if (self::canReplaceBlock($block, $blockAbove)) {
+		if (self::canReplaceBlock($chunk, new Vector3($currX, $currY, $currZ))) {
 			if ($currY - 1 < $caveLiquidAltitude) {
 				$chunk->setFullBlock($currX, $currY, $currZ, VanillaBlocks::LAVA()->getFullId());
 			} else {
 				$chunk->setFullBlock($currX, $currY, $currZ, VanillaBlocks::AIR()->getFullId());
+
+				// Try to repair naked dirt by replacing them with grass if they are the highest block here
+				$block = BlockFactory::getInstance()->fromFullBlock($chunk->getFullBlock($currX, $currY - 1, $currZ));
+				if ($block instanceof Dirt && $chunk->getHighestBlockAt($currX, $currZ) === ($currY - 1)) {
+					$chunk->setFullBlock($currX, $currY - 1, $currZ, VanillaBlocks::GRASS()->getFullId());
+				}
 			}
 		}
 	}
@@ -276,12 +281,13 @@ class CavePopulator implements Populator
 	 * Determines if the Block is suitable to be replaced during cave generation.
 	 * Basically returns true for most common worldgen blocks (e.g. stone, dirt, sand), false if the block is air.
 	 *
-	 * @param Block $block the block's IBlockState
-	 * @param Block $blockAbove the IBlockState of the block above this one
 	 * @return bool Returns true if the blockState can be replaced
 	 */
-	public static function canReplaceBlock(Block $block, Block $blockAbove): bool
+	public static function canReplaceBlock(Chunk $chunk, Vector3 $blockPos): bool
 	{
+		$block = BlockFactory::getInstance()->fromFullBlock($chunk->getFullBlock($blockPos->getX(), $blockPos->getY(), $blockPos->getZ()));
+		$blockAbove = BlockFactory::getInstance()->fromFullBlock($chunk->getFullBlock($blockPos->getX(), $blockPos->getY() + 1, $blockPos->getZ()));
+
 		// Avoid damaging trees
 		if (in_array($block->getId(), [BlockLegacyIds::LEAVES, BlockLegacyIds::LEAVES2, BlockLegacyIds::LOG, BlockLegacyIds::LOG2])) {
 			return false;
@@ -290,6 +296,18 @@ class CavePopulator implements Populator
 		// Avoid digging out under trees
 		if (in_array($blockAbove->getId(), [BlockLegacyIds::LOG, BlockLegacyIds::LOG2])) {
 			return false;
+		}
+
+		foreach (Facing::ALL as $facing) {
+			$facingSide = $blockPos->getSide($facing);
+
+			if (($facingSide->getX() >= 0 && $facingSide->getX() <= 15) && ($facingSide->getZ() >= 0 && $facingSide->getZ() <= 15)) {
+				// Do not accept any liquid in all "facing"
+				$blockArea = BlockFactory::getInstance()->fromFullBlock($chunk->getFullBlock($facingSide->getX(), $facingSide->getY(), $facingSide->getZ()));
+				if ($blockArea instanceof Liquid) {
+					return false;
+				}
+			}
 		}
 
 		// Mine-able blocks

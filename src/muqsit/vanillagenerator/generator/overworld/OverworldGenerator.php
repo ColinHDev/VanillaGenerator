@@ -6,6 +6,7 @@ namespace muqsit\vanillagenerator\generator\overworld;
 
 use InvalidArgumentException;
 use muqsit\vanillagenerator\generator\Environment;
+use muqsit\vanillagenerator\generator\overworld\populator\CavePopulator;
 use muqsit\vanillagenerator\generator\overworld\populator\OverworldPopulator;
 use muqsit\vanillagenerator\generator\overworld\populator\SnowPopulator;
 use muqsit\vanillagenerator\generator\utils\WorldOctaves;
@@ -21,13 +22,15 @@ class OverworldGenerator extends VanillaGenerator
 {
 	/** @var \OverworldGenerator */
 	private \OverworldGenerator $generator;
+	/** @var CavePopulator|null */
+	private ?CavePopulator $postChunkGenerate = null;
 
 	public function __construct(int $seed, string $preset)
 	{
 		parent::__construct($seed, Environment::OVERWORLD, null, $preset);
-		$this->addPopulators(new OverworldPopulator(), new SnowPopulator());
 
 		$enableUHC = false;
+		$enableCaves = false;
 
 		// The preset example: "isUHC,1:environment,overworld"
 		$presets = explode(':', $preset);
@@ -43,11 +46,25 @@ class OverworldGenerator extends VanillaGenerator
 				case "isUHC":
 					$enableUHC = (int)$settings[1] === 1;
 					break;
+				case "withCaves":
+					$enableCaves = (int)$settings[1] === 1;
+					break;
 				case "environment":
 				case "amplification":
 					// TODO: These presets are available in mc-generator but they remain inaccessible for now.
 			}
 		}
+
+		if ($enableCaves) {
+			$this->addPopulators(new OverworldPopulator(), new SnowPopulator());
+
+			$this->postChunkGenerate = new CavePopulator();
+		} else {
+			$this->addPopulators(new OverworldPopulator(), new SnowPopulator());
+		}
+
+		print "With UHC: " . ($enableUHC ? "UHC mode" : "not UHC mode") . PHP_EOL;
+		print "With Caves: " . ($enableCaves ? "Caves mode" : "not Caves mode") . PHP_EOL;
 
 		$this->generator = new \OverworldGenerator($seed, $enableUHC);
 	}
@@ -77,6 +94,10 @@ class OverworldGenerator extends VanillaGenerator
 			/** @phpstan-ignore-next-line */
 			$this->biomeIds = new BiomeArray($biomes);
 		})->call($chunk);
+
+		if ($this->postChunkGenerate !== null) {
+			$this->postChunkGenerate->populate($world, $this->random, $chunkX, $chunkZ, $chunk);
+		}
 	}
 
 	protected function generateChunkData(ChunkManager $world, int $chunk_x, int $chunk_z, VanillaBiomeGrid $grid): void
