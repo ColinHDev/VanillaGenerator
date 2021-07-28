@@ -32,6 +32,8 @@ class OverworldGenerator extends VanillaGenerator
 		// The preset example: "isUHC,1:environment,overworld"
 		$presets = explode(':', $preset);
 		foreach ($presets as $preset) {
+			if (empty($preset)) continue;
+
 			$settings = explode(',', $preset);
 			if (count($settings) < 2) {
 				throw new InvalidArgumentException("World preset must have a key and a value respectively");
