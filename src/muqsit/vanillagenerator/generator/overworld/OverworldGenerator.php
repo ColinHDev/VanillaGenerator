@@ -6,33 +6,29 @@ namespace muqsit\vanillagenerator\generator\overworld;
 
 use InvalidArgumentException;
 use muqsit\vanillagenerator\generator\Environment;
-use muqsit\vanillagenerator\generator\overworld\populator\CavePopulator;
-use muqsit\vanillagenerator\generator\overworld\populator\OverworldPopulator;
-use muqsit\vanillagenerator\generator\overworld\populator\SnowPopulator;
 use muqsit\vanillagenerator\generator\utils\WorldOctaves;
 use muqsit\vanillagenerator\generator\VanillaBiomeGrid;
 use muqsit\vanillagenerator\generator\VanillaGenerator;
 use pocketmine\world\ChunkManager;
 use pocketmine\world\format\BiomeArray;
+use pocketmine\world\format\Chunk;
 use pocketmine\world\format\PalettedBlockArray;
 use pocketmine\world\format\SubChunk;
 use pocketmine\world\World;
+use ReflectionException;
+use ReflectionObject;
 
 class OverworldGenerator extends VanillaGenerator
 {
 	/** @var \OverworldGenerator */
 	private \OverworldGenerator $generator;
-	/** @var CavePopulator|null */
-	private ?CavePopulator $postChunkGenerate = null;
 
 	public function __construct(int $seed, string $preset)
 	{
 		parent::__construct($seed, Environment::OVERWORLD, null, $preset);
 
 		$enableUHC = false;
-		$enableCaves = false;
 
-		// The preset example: "isUHC,1:environment,overworld"
 		$presets = explode(':', $preset);
 		foreach ($presets as $preset) {
 			if (empty($preset)) continue;
@@ -46,25 +42,11 @@ class OverworldGenerator extends VanillaGenerator
 				case "isUHC":
 					$enableUHC = (int)$settings[1] === 1;
 					break;
-				case "withCaves":
-					$enableCaves = (int)$settings[1] === 1;
-					break;
 				case "environment":
 				case "amplification":
 					// TODO: These presets are available in mc-generator but they remain inaccessible for now.
 			}
 		}
-
-		if ($enableCaves) {
-			$this->addPopulators(new OverworldPopulator(), new SnowPopulator());
-
-			$this->postChunkGenerate = new CavePopulator();
-		} else {
-			$this->addPopulators(new OverworldPopulator(), new SnowPopulator());
-		}
-
-		print "With UHC: " . ($enableUHC ? "UHC mode" : "not UHC mode") . PHP_EOL;
-		print "With Caves: " . ($enableCaves ? "Caves mode" : "not Caves mode") . PHP_EOL;
 
 		$this->generator = new \OverworldGenerator($seed, $enableUHC);
 	}
@@ -94,9 +76,54 @@ class OverworldGenerator extends VanillaGenerator
 			/** @phpstan-ignore-next-line */
 			$this->biomeIds = new BiomeArray($biomes);
 		})->call($chunk);
+	}
 
-		if ($this->postChunkGenerate !== null) {
-			$this->postChunkGenerate->populate($world, $this->random, $chunkX, $chunkZ, $chunk);
+	/**
+	 * @throws ReflectionException
+	 */
+	public function populateChunk(ChunkManager $world, int $chunk_x, int $chunk_z): void
+	{
+		$r = new ReflectionObject($world);
+		$p = $r->getProperty('chunks');
+		$p->setAccessible(true);
+
+		$biomeEntries = [];
+		$pelletedEntries = [];
+		$dirtyEntries = [];
+
+		/**
+		 * @var int $hash
+		 * @var Chunk $chunkVal
+		 */
+		foreach ($p->getValue($world) as $hash => $chunkVal) {
+			World::getXZ($hash, $x, $z);
+
+			$array = [];
+
+			foreach ($chunkVal->getSubChunks() as $y => $subChunk) {
+				if (!$subChunk->isEmptyFast()) {
+					$array[$y] = $subChunk->getBlockLayers()[0];
+				} else {
+					$newSubChunk = new SubChunk($subChunk->getEmptyBlockId(), [new PalettedBlockArray($subChunk->getEmptyBlockId())], $subChunk->getBlockSkyLightArray(), $subChunk->getBlockLightArray());
+					$chunkVal->setSubChunk($y, $newSubChunk);
+
+					$array[$y] = $newSubChunk->getBlockLayers()[0];
+				}
+			}
+
+			$pelletedEntries[$hash] = $array;
+			$biomeEntries[$hash] = $chunkVal->getBiomeIdArray();
+			$dirtyEntries[$hash] = $chunkVal->isDirty();
+		}
+
+		$this->generator->populateChunk($pelletedEntries, $biomeEntries, $dirtyEntries, World::chunkHash($chunk_x, $chunk_z));
+
+		foreach ($dirtyEntries as $hash => $dirtyEntry) {
+			World::getXZ($hash, $x, $z);
+
+			if ($dirtyEntry) {
+				$world->getChunk($x, $z)->setDirty();
+			}
 		}
 	}
 

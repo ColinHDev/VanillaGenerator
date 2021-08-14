@@ -6,25 +6,20 @@ namespace muqsit\vanillagenerator\generator\biomegrid;
 
 use muqsit\vanillagenerator\generator\biomegrid\utils\MapLayerPair;
 use muqsit\vanillagenerator\generator\Environment;
-use muqsit\vanillagenerator\generator\overworld\biome\BiomeIds;
-use muqsit\vanillagenerator\generator\overworld\WorldType;
+use pocketmine\data\bedrock\BiomeIds;
 use Random;
 
 abstract class MapLayer
 {
 
-	public static function initialize(int $seed, int $environment, string $world_type): MapLayerPair
+	public static function initialize(int $seed, int $environment): MapLayerPair
 	{
-		if ($environment === Environment::OVERWORLD && $world_type === WorldType::FLAT) {
+		if ($environment === Environment::OVERWORLD) {
 			return new MapLayerPair(new ConstantBiomeMapLayer($seed, BiomeIds::PLAINS), null);
 		}
 
 		if ($environment === Environment::NETHER) {
 			return new MapLayerPair(new ConstantBiomeMapLayer($seed, BiomeIds::HELL), null);
-		}
-
-		if ($environment === Environment::THE_END) {
-			return new MapLayerPair(new ConstantBiomeMapLayer($seed, BiomeIds::SKY), null);
 		}
 
 		return new MapLayerPair(null, null);

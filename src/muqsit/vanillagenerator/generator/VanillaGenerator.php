@@ -6,7 +6,6 @@ namespace muqsit\vanillagenerator\generator;
 
 use muqsit\vanillagenerator\generator\biomegrid\MapLayer;
 use muqsit\vanillagenerator\generator\biomegrid\utils\MapLayerPair;
-use muqsit\vanillagenerator\generator\overworld\WorldType;
 use muqsit\vanillagenerator\generator\utils\WorldOctaves;
 use pocketmine\world\ChunkManager;
 use pocketmine\world\format\Chunk;
@@ -21,7 +20,7 @@ abstract class VanillaGenerator extends Generator
 	private ?WorldOctaves $octave_cache = null;
 
 	/** @var Populator[] */
-	private array $populators = [];
+	protected array $populators = [];
 
 	private MapLayerPair $biome_grid;
 
@@ -32,7 +31,7 @@ abstract class VanillaGenerator extends Generator
 	{
 		parent::__construct($seed, $preset);
 		$this->random = new Random($seed);
-		$this->biome_grid = MapLayer::initialize($seed, $environment, $world_type ?? WorldType::NORMAL);
+		$this->biome_grid = MapLayer::initialize($seed, $environment);
 	}
 
 	protected function addPopulators(Populator ...$populators): void
