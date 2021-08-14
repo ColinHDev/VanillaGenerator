@@ -43,7 +43,7 @@ class NetherGenerator extends VanillaGenerator
 
 	public function __construct(int $seed, string $preset)
 	{
-		parent::__construct($seed, Environment::NETHER, null, $preset);
+		parent::__construct($seed, Environment::NETHER, $preset);
 		$this->addPopulators(new NetherPopulator($this->getMaxY())); // This isn't faithful to original code. Was $world->getWorldHeight()
 	}
 

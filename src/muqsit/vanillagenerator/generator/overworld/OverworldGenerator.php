@@ -25,7 +25,7 @@ class OverworldGenerator extends VanillaGenerator
 
 	public function __construct(int $seed, string $preset)
 	{
-		parent::__construct($seed, Environment::OVERWORLD, null, $preset);
+		parent::__construct($seed, Environment::OVERWORLD, $preset);
 
 		$enableUHC = false;
 

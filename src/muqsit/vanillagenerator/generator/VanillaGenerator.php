@@ -27,7 +27,7 @@ abstract class VanillaGenerator extends Generator
 	/** @var Random $random */
 	protected $random;
 
-	public function __construct(int $seed, int $environment, ?string $world_type = null, string $preset = "")
+	public function __construct(int $seed, int $environment, string $preset = "")
 	{
 		parent::__construct($seed, $preset);
 		$this->random = new Random($seed);
