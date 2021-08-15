@@ -4,24 +4,24 @@ declare(strict_types=1);
 
 namespace muqsit\vanillagenerator;
 
-use muqsit\vanillagenerator\generator\nether\NetherGenerator;
-use muqsit\vanillagenerator\generator\overworld\OverworldGenerator;
+use muqsit\vanillagenerator\generator\NetherGenerator;
+use muqsit\vanillagenerator\generator\OverworldGenerator;
 use pocketmine\plugin\PluginBase;
 use pocketmine\world\generator\GeneratorManager;
 
 final class Loader extends PluginBase
 {
 
-	private const EXT_MCGENERATOR_VERSION = "2.1.0";
+	private const EXT_MCGENERATOR_VERSION = "2.0.0";
 
 	public function onLoad(): void
 	{
-		if (!extension_loaded('mcgenerator')) {
-			$this->getLogger()->critical("Unable to find the mcgenerator extension.");
+		if (!extension_loaded('vanillagenerator')) {
+			$this->getLogger()->critical("Unable to find the vanillagenerator extension.");
 			$this->getServer()->getPluginManager()->disablePlugin($this);
 			return;
-		} elseif (($phpver = phpversion('mcgenerator')) < self::EXT_MCGENERATOR_VERSION) {
-			$this->getLogger()->critical("mcgenerator extension version " . self::EXT_MCGENERATOR_VERSION . " is required, you have $phpver.");
+		} elseif (($phpver = phpversion('vanillagenerator')) < self::EXT_MCGENERATOR_VERSION) {
+			$this->getLogger()->critical("vanillagenerator extension version " . self::EXT_MCGENERATOR_VERSION . " is required, you have $phpver.");
 			$this->getServer()->getPluginManager()->disablePlugin($this);
 			return;
 		}
