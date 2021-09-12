@@ -90,7 +90,7 @@ class NetherGenerator extends Generator
 
 			$pelletedEntries[$hash] = $array;
 			$biomeEntries[$hash] = $chunkVal->getBiomeIdArray();
-			$dirtyEntries[$hash] = $chunkVal->isDirty();
+			$dirtyEntries[$hash] = $chunkVal->isTerrainDirty();
 		}
 
 		$this->generator->populateChunk($pelletedEntries, $biomeEntries, $dirtyEntries, World::chunkHash($chunkX, $chunkZ));
@@ -99,7 +99,10 @@ class NetherGenerator extends Generator
 			World::getXZ($hash, $x, $z);
 
 			if ($dirtyEntry) {
-				$world->getChunk($x, $z)->setDirty();
+				$c = $world->getChunk($x, $z);
+
+				$c->setTerrainDirtyFlag(Chunk::DIRTY_FLAG_TERRAIN, true);
+				$c->setTerrainDirtyFlag(Chunk::DIRTY_FLAG_BIOMES, true);
 			}
 		}
 	}
